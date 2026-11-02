@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Летопись Падонков</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Golos+Text:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: тёмный стол, на нём золотая книга. Десктоп: разворот из двух страниц с петлёй по центру. Телефон: одна страница, лист улетает влево. */
+:root {
+  --bg: #232323;
+  --bg-deep: #151515;
+  --paper: #1f1e1b;
+  --paper-2: #282722;
+  --ink: #ece4cf;
+  --ink-dim: #a39b86;
+  --gold: #d8b45c;
+  --gold-hi: #f6e3a1;
+  --gold-lo: #7d6428;
+  --line: rgba(216, 180, 92, 0.28);
+  --f-display: "Oswald", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Golos Text", "PT Sans", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --fs: 16px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { background: var(--bg); }
+body {
+  margin: 0; overflow-x: hidden;
+  background: radial-gradient(110% 80% at 50% 30%, #333 0%, var(--bg) 50%, var(--bg-deep) 100%);
+  background-color: var(--bg);
+  color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+body.lock { overflow: hidden; }
+button { font: inherit; color: inherit; }
+
+/* ---------- заставка ---------- */
+.intro { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: grid; place-items: center; transition: opacity .9s ease, visibility .9s; }
+.intro.out { opacity: 0; visibility: hidden; }
+.stage { position: relative; width: var(--S, 520px); height: var(--S, 520px); filter: drop-shadow(0 0 14px rgba(216, 180, 92, .22)); }
+.stage canvas, .stage .final, .stage .shine { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage .final { opacity: 0; transition: opacity .8s ease; object-fit: contain; }
+.stage.solid .final { opacity: 1; }
+.stage .shine {
+  opacity: 0;
+  -webkit-mask: url("img/logo.png") center / contain no-repeat; mask: url("img/logo.png") center / contain no-repeat;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 250, 220, .95) 50%, transparent 62%) no-repeat;
+  background-size: 260% 100%; background-position: 130% 0;
+}
+.stage.shining .shine { opacity: 1; animation: sweep 1.5s ease-in-out forwards; }
+@keyframes sweep { to { background-position: -30% 0; } }
+.skip {
+  position: absolute; left: 0; right: 0; bottom: max(22px, env(safe-area-inset-bottom, 0px)); text-align: center;
+  font: 400 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-dim);
+  background: none; border: 0; padding: 14px; cursor: pointer;
+}
+.skip:hover, .skip:focus-visible { color: var(--gold); }
+
+/* ---------- каркас ---------- */
+.app { height: 100%; display: flex; flex-direction: column; max-width: 1280px; margin: 0 auto; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-block: 14px 6px; flex: none; }
+.mark { font: 700 17px/1 var(--f-display); letter-spacing: .3em; color: var(--gold); }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.tool {
+  font: 400 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim);
+  background: none; border: 1px solid var(--line); padding: 9px 11px; cursor: pointer; border-radius: 2px;
+}
+.tool:hover, .tool:focus-visible, .tool[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
+.table { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+.shift { position: relative; transition: transform .9s cubic-bezier(.5, 0, .2, 1); }
+.book { position: relative; perspective: 2600px; }
+.book::before {
+  content: ""; position: absolute; left: 2%; right: 2%; bottom: -3%; height: 6%; z-index: 0;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .55), transparent); filter: blur(8px);
+}
+.leaf { position: absolute; top: 0; left: 50%; width: var(--pw); height: var(--ph); transform-origin: left center; transform-style: preserve-3d; transition: transform 1s cubic-bezier(.55, .05, .25, 1); }
+.book.single .leaf { left: 0; }
+.leaf.flipped { transform: rotateY(-180deg); }
+.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; background: var(--paper); }
+.face.back { transform: rotateY(180deg); }
+.face.front { border-radius: 0 6px 6px 0; box-shadow: inset -2px 0 0 rgba(216, 180, 92, .12); }
+.face.back { border-radius: 6px 0 0 6px; box-shadow: inset 2px 0 0 rgba(216, 180, 92, .12); }
+.book.single .face.front { border-radius: 6px; }
+.face.front::after, .face.back::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.face.front::after { background: linear-gradient(90deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .12) 5%, transparent 12%); }
+.face.back::after { background: linear-gradient(270deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .12) 5%, transparent 12%); }
+.book.single .face.front::after { background: linear-gradient(90deg, rgba(0, 0, 0, .3) 0%, transparent 5%); }
+.face.blank { background: var(--paper); }
+
+.pin {
+  position: absolute; inset: 0; padding: 8% 9% 15%; overflow-y: auto; overflow-x: hidden;
+  background: linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 100%);
+  font-size: var(--fs); scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent;
+}
+.pnum { position: absolute; bottom: 4%; left: 0; right: 0; text-align: center; font: 400 .72em/1 var(--f-mono); letter-spacing: .2em; color: var(--gold-lo); z-index: 6; pointer-events: none; }
+
+/* зоны перелистывания по краям */
+.hz { position: absolute; top: 0; bottom: 0; width: 11%; z-index: 200; background: none; border: 0; cursor: pointer; display: grid; place-items: center; opacity: 0; transition: opacity .25s; color: var(--gold); font: 400 30px/1 var(--f-display); }
+.hz:hover, .hz:focus-visible { opacity: 1; background: linear-gradient(90deg, rgba(216, 180, 92, .1), transparent); }
+.hz-l { left: 0; } .hz-r { right: 0; background: none; }
+.hz-r:hover, .hz-r:focus-visible { background: linear-gradient(270deg, rgba(216, 180, 92, .1), transparent); }
+.hz[disabled] { display: none; }
+@media (hover: none) { .hz { opacity: 0; } }
+
+.nav { flex: none; display: flex; align-items: center; justify-content: center; gap: 18px; padding-block: 10px 14px; }
+.nbtn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--gold); font: 400 22px/1 var(--f-display); cursor: pointer; }
+.nbtn:hover, .nbtn:focus-visible { border-color: var(--gold); background: rgba(216, 180, 92, .08); }
+.nbtn[disabled] { opacity: .25; cursor: default; }
+.count { min-width: 11ch; text-align: center; font: 400 12px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-dim); }
+.hint { text-align: center; font: 400 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gold-lo); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); flex: none; }
+
+/* ---------- содержимое страниц ---------- */
+.kick { font: 400 .72em/1.4 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--gold-lo); margin: 0 0 .6em; }
+.pin h2 { margin: 0 0 .6em; font: 700 2.1em/1.05 var(--f-display); letter-spacing: .06em; text-transform: uppercase; text-wrap: balance;
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 55%, var(--gold-lo)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pin p { margin: 0 0 .85em; max-width: 52ch; }
+.story h2 + p::first-letter { float: left; font: 700 3.3em/.82 var(--f-display); color: var(--gold); margin: .06em .1em 0 0; }
+.pin em { color: var(--gold-hi); font-style: normal; }
+.m .c { display: none; }
+body.clean .m .o { display: none; }
+body.clean .m .c { display: inline; color: var(--ink-dim); font-family: var(--f-mono); font-size: .85em; }
+
+.pg-cover .pin, .pg-back .pin { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 1em;
+  background: radial-gradient(90% 70% at 50% 40%, #2e2c27 0%, #171614 100%); }
+.pg-cover .pin::before, .pg-back .pin::before { content: ""; position: absolute; inset: 4.5%; border: 1px solid var(--line); pointer-events: none; }
+.pg-cover img.lg { width: 82%; max-width: 100%; height: auto; filter: drop-shadow(0 0 12px rgba(216, 180, 92, .3)); }
+.pg-cover h1 { margin: 0; font: 700 1.9em/1.1 var(--f-display); letter-spacing: .24em; text-transform: uppercase; color: var(--gold); }
+.pg-cover .sub { font: 400 .72em/1.6 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-dim); margin: 0; max-width: 32ch; }
+.pg-back img.lg { width: 46%; opacity: .9; }
+.badge { display: inline-block; font: 500 .8em/1 var(--f-mono); letter-spacing: .14em; color: var(--gold); border: 1px solid var(--gold); padding: .5em .7em; border-radius: 2px; }
+
+.pg-epi .pin { display: flex; flex-direction: column; justify-content: center; gap: .6em; }
+.big { font: 700 3.2em/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; margin: 0;
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 55%, var(--gold-lo)); -webkit-background-clip: text; background-clip: text; color: transparent; text-wrap: balance; }
+.en { font: 400 .8em/1.4 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-dim); margin: 0 0 1.4em; }
+
+.warn { border: 1px solid var(--line); padding: 1em 1.1em; margin-top: 1em; font-size: .92em; color: var(--ink-dim); }
+.warn b { color: var(--gold); font-family: var(--f-mono); letter-spacing: .12em; }
+
+.toc { display: flex; flex-direction: column; gap: .2em; margin-top: .6em; }
+.toc button { display: flex; align-items: baseline; gap: .6em; text-align: left; background: none; border: 0; border-bottom: 1px solid transparent; padding: .55em 0; cursor: pointer; color: var(--ink); }
+.toc button span { font: 700 1.25em/1.2 var(--f-display); letter-spacing: .06em; text-transform: uppercase; }
+.toc button small { display: block; font: 400 .75em/1.3 var(--f-mono); letter-spacing: .06em; color: var(--ink-dim); text-transform: none; }
+.toc button i { flex: 1; border-bottom: 1px dotted var(--gold-lo); transform: translateY(-.3em); min-width: 1em; }
+.toc button b { font: 500 .95em/1 var(--f-mono); color: var(--gold); }
+.toc button:hover span, .toc button:focus-visible span { color: var(--gold); }
+
+.rules { list-style: none; margin: 0; padding: 0; counter-reset: r; display: flex; flex-direction: column; gap: .7em; }
+.rules li { counter-increment: r; display: grid; grid-template-columns: 1.8em 1fr; gap: .5em; }
+.rules li::before { content: counter(r); font: 700 1.3em/1 var(--f-display); color: var(--gold); }
+
+/* портрет-силуэт */
+.pg-portrait .pin { display: flex; flex-direction: column; align-items: center; text-align: center; padding-bottom: 13%; }
+.pg-portrait .bust { width: min(44%, 210px); flex: none; margin-top: .2em; }
+.pg-portrait .name { margin: .35em 0 .1em; font: 700 2.3em/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.pg-portrait .role { margin: 0 0 .8em; font: 400 .74em/1.4 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-dim); }
+.stats { width: 100%; list-style: none; margin: 0; padding: 0; text-align: left; }
+.stats li { display: flex; justify-content: space-between; gap: 1em; padding: .38em 0; border-top: 1px solid var(--line); font-size: .86em; line-height: 1.45; }
+.stats li span:first-child { color: var(--ink-dim); }
+.stats li span:last-child { color: var(--gold-hi); text-align: right; }
+.bust {
+  position: relative; aspect-ratio: 4 / 5; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 0 1px rgba(216, 180, 92, .95)) drop-shadow(0 14px 22px rgba(0, 0, 0, .5)); transition: filter .5s ease;
+}
+.bust:hover, .bust.on, .bust:focus-visible { filter: drop-shadow(0 0 1px var(--gold)) drop-shadow(0 0 20px rgba(216, 180, 92, .35)) drop-shadow(0 14px 22px rgba(0, 0, 0, .5)); }
+.bust:focus-visible { outline: 2px solid var(--gold); outline-offset: 6px; }
+.sil, .photo { position: absolute; inset: 0; width: 100%; height: 100%; -webkit-mask: var(--bustmask) center / 100% 100% no-repeat; mask: var(--bustmask) center / 100% 100% no-repeat; }
+.sil { background: linear-gradient(180deg, #1d1d1d, #0b0b0b); }
+.photo { object-fit: cover; display: block; clip-path: circle(0% at 50% 37%); transform: scale(1.06); filter: grayscale(.7) contrast(1.08);
+  transition: clip-path .9s cubic-bezier(.2, .7, .2, 1), transform 1.2s ease, filter 1s ease; }
+.bust:hover .photo, .bust.on .photo, .bust:focus-visible .photo { clip-path: circle(80% at 50% 37%); transform: scale(1); filter: none; }
+.qm { position: absolute; left: 0; right: 0; top: 24%; text-align: center; pointer-events: none; font: 700 4.2em/1 var(--f-display); color: var(--gold-lo); transition: opacity .35s; }
+.bust:hover .qm, .bust.on .qm, .bust:focus-visible .qm { opacity: 0; }
+.tap { margin: 1.5em 0 0; font: 400 .7em/1.4 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gold-lo); }
+
+.quotes { list-style: none; margin: 0; padding: 0; }
+.quotes li { padding: .85em 0; border-top: 1px solid var(--line); font-size: 1.04em; font-style: italic; color: var(--ink); }
+.quotes li:last-child { border-bottom: 1px solid var(--line); }
+.who { font: 400 .75em/1.4 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim); margin-top: 1em; }
+.logo-end { display: block; width: 70%; margin: 1em auto 0; filter: drop-shadow(0 0 10px rgba(216, 180, 92, .25)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .leaf, .shift, .photo, .stage .final, .intro { transition-duration: .01s; }
+  .stage.shining .shine { animation: none; opacity: 0; }
+}
+</style>
+
+</head>
+<body>
+<div class="intro" id="intro" role="presentation">
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-hidden="true"></canvas>
+    <img class="final" src="img/logo.png" alt="Падонки. It's never too late.">
+    <div class="shine" aria-hidden="true"></div>
+  </div>
+  <button class="skip" id="skip" type="button">нажми, чтобы пропустить</button>
+</div>
+
+<div class="app">
+  <header class="top">
+    <div class="mark">ПАДОНКИ</div>
+    <div class="tools">
+      <button class="tool" type="button" data-go="3">оглавление</button>
+      <button class="tool" type="button" id="censor" aria-pressed="false">цензура: выкл</button>
+      <button class="tool" type="button" id="replay">заставка ↻</button>
+    </div>
+  </header>
+  <div class="table" id="table">
+    <div class="shift" id="shift">
+      <div class="book" id="book"></div>
+      <button class="hz hz-l" id="hzl" type="button" aria-label="Предыдущая страница">‹</button>
+      <button class="hz hz-r" id="hzr" type="button" aria-label="Следующая страница">›</button>
+    </div>
+  </div>
+  <nav class="nav" aria-label="Листание">
+    <button class="nbtn" id="prev" type="button" aria-label="Назад">‹</button>
+    <div class="count" id="count" aria-live="polite">обложка</div>
+    <button class="nbtn" id="next" type="button" aria-label="Вперёд">›</button>
+  </nav>
+  <div class="hint">листай стрелками, свайпом или краем страницы</div>
+</div>
+
+<!-- ==================== ТЕКСТ КНИГИ (28 страниц, по порядку) ==================== -->
+<div id="src" hidden>
+
+<!-- 0: обложка -->
+<section class="pg pg-cover nonum">
+  <img class="lg" src="img/logo.png" alt="Падонки">
+  <h1>Летопись</h1>
+  <p class="sub">в трёх лицах, девяти байках и одной шаурме</p>
+  <span class="badge">18+</span>
+</section>
+
+<!-- 1: форзац -->
+<section class="pg pg-epi nonum">
+  <p class="kick">Девиз банды</p>
+  <p class="big">Никогда не поздно.</p>
+  <p class="en">It's never too late</p>
+  <p>Выбит на сердце, нацарапан на лавочке и дважды записан с ошибкой.</p>
+  <p>Раньше девиз звучал именно так. После истории с последним автобусом его уточнили: «Всегда поздно, но мы стараемся».</p>
+</section>
+
+<!-- 2: титул -->
+<section class="pg">
+  <p class="kick">Том первый</p>
+  <h2>Падонки</h2>
+  <p>Составлено со слов участников, бабы Вали с четвёртого этажа и одного голубя, который всё видел и ничего не сказал.</p>
+  <p>Здесь вы найдёте три биографии, девять баек, два общих дела и кодекс, который никто не соблюдает.</p>
+  <div class="warn"><b>18+</b><br>В книге есть мат, гуси и шаурма. Все прозвища, события и герои выдуманы ради смеха. Совпадения случайны, обид нет, исков тоже. Мат прячется кнопкой «цензура» наверху.</div>
+</section>
+
+<!-- 3: оглавление -->
+<section class="pg">
+  <p class="kick">Содержание</p>
+  <h2>Оглавление</h2>
+  <div class="toc">
+    <button type="button" data-go="4"><span>Кодекс падонков<small>семь правил, ни одно не работает</small></span><i></i><b>4</b></button>
+    <button type="button" data-go="5"><span>Бугор<small>досье, биография, три байки, цитатник</small></span><i></i><b>5</b></button>
+    <button type="button" data-go="11"><span>Тихий<small>досье, биография, три байки, цитатник</small></span><i></i><b>11</b></button>
+    <button type="button" data-go="17"><span>Малой<small>досье, биография, три байки, цитатник</small></span><i></i><b>17</b></button>
+    <button type="button" data-go="23"><span>Общее дело<small>ночной хлеб и суд на лавочке</small></span><i></i><b>23</b></button>
+    <button type="button" data-go="25"><span>Эпилог<small>выводы комиссии</small></span><i></i><b>25</b></button>
+  </div>
+</section>
+
+<!-- 4: кодекс -->
+<section class="pg">
+  <p class="kick">Свод правил</p>
+  <h2>Кодекс падонков</h2>
+  <ol class="rules">
+    <li><span>Шаурма не еда, а валюта. Рашид принимает к оплате уважение.</span></li>
+    <li><span>Гусей не трогать. Гусь трогает сам.</span></li>
+    <li><span>Если баба Валя зовёт домой, ты уже дома, что бы ты ни делал.</span></li>
+    <li><span>«Через пять минут» значит «через час». Это не вранье, это климат.</span></li>
+    <li><span>Участкового не обгонять. У него велосипед и всё время мира.</span></li>
+    <li><span>Если всё пошло по <span class="m">п*зде</span>, это не конец. Это сюжет.</span></li>
+    <li><span>Никогда не поздно. Даже когда уже поздно.</span></li>
+  </ol>
+</section>
+
+<!-- 5: Бугор, портрет -->
+<section class="pg pg-portrait" data-photo="p1" data-alt="Бугор">
+  <p class="kick">Досье № 1</p>
+  <div class="bust" tabindex="0" role="button" aria-label="Показать лицо: Бугор"></div>
+  <p class="tap">наведи или коснись</p>
+  <h2 class="name">Бугор</h2>
+  <p class="role">главный по трём дворам</p>
+  <ul class="stats">
+    <li><span>Должность</span><span>ответственный за общак шаурмы</span></li>
+    <li><span>Авторитет</span><span>7 из 10, три отнимает баба Валя</span></li>
+    <li><span>Страх перед гусями</span><span>9 из 10</span></li>
+    <li><span>Девиз</span><span>сначала борщ, потом авторитет</span></li>
+  </ul>
+</section>
+
+<!-- 6: Бугор, биография -->
+<section class="pg">
+  <p class="kick">Бугор · родился, вырос, поел</p>
+  <h2>Биография</h2>
+  <p>Родился в тот день, когда во дворе №3 отключили горячую воду. С тех пор всё важное в его жизни происходит через холодную. Первое слово было не «мама», а «ещё», и относилось оно к каше.</p>
+  <p>В детском саду возглавил тайное общество по защите тихого часа. Членов было двое, второй спал. В школе расширил влияние до буфета: за пирожок с повидлом он давал защиту, за два пирожка давал совет.</p>
+  <p>Прозвище появилось само. Во дворе рыл котлован экскаватор, а будущий авторитет приходил каждый день смотреть и подсказывал рабочим. Сначала его не слушали, потом привыкли, потом позвали на обед. Так он понял, что настоящая власть начинается с обеда.</p>
+  <p>Сегодня Бугор держит три двора, один ларёк и обещание, данное бабе Вале: приходить к ужину вовремя. Последнее выполняется лучше всего.</p>
+</section>
+
+<!-- 7: Бугор, байка 1 -->
+<section class="pg story">
+  <p class="kick">Байка первая</p>
+  <h2>Налог с шаурмы</h2>
+  <p>Однажды Бугор решил взять под опеку ларёк дяди Рашида. Пришёл с двумя кентами, встал в дверях и сказал: «Рашид, пора делиться».</p>
+  <p>«Чем?» — спросил Рашид, не отрываясь от шампура. «Ну… всем», — уточнил Бугор уже менее уверенно.</p>
+  <p>Рашид молча отрезал ровно треть шаурмы и протянул через прилавок. «Это общак, — сказал он. — Остальное моё». Бугор хотел эффектно хлопнуть дверью и уйти, но дверь открывалась на себя. Хлопок получился лбом.</p>
+  <p>«<span class="m">П*здец</span>», — сказал Бугор. Рашид налил ему чаю и добавил соуса.</p>
+  <p>Теперь Бугор платит «налог» сам, каждую пятницу, и приводит клиентов. Двор называет это крышей, Рашид называет это постоянным покупателем.</p>
+</section>
+
+<!-- 8: Бугор, байка 2 -->
+<section class="pg story">
+  <p class="kick">Байка вторая</p>
+  <h2>Борщ стынет</h2>
+  <p>Бугор собрал на лавочке сходку. Весь двор, человек пятнадцать. Встал, расправил плечи и начал: «Слушайте сюда. С сегодняшнего дня в этом дворе…»</p>
+  <p>С балкона четвёртого этажа раздалось: «Бугор! Домой! Борщ стынет!» Наступила тишина. Было слышно, как где-то далеко капает кран.</p>
+  <p>«…собрание закрыто», — тише закончил Бугор и пошёл домой. Быстро, но с достоинством.</p>
+  <p>Кличку «Борщевик» ему дали в тот же вечер. Вслух её никто не произносит, только шёпотом и только когда он завернул за угол.</p>
+  <p>Через три дня баба Валя накормила борщом половину двора, а Бугор мыл посуду. «Авторитет — это когда моешь последним», — объяснил он. С лавочки кто-то тихо сказал: «Да ну на <span class="m">х*й</span>, он реально пошёл». Никто не спорил.</p>
+</section>
+
+<!-- 9: Бугор, байка 3 -->
+<section class="pg story">
+  <p class="kick">Байка третья</p>
+  <h2>Лифт</h2>
+  <p>Бугор застрял в лифте на сорок минут. Вместе с ним застрял дед Семёныч с пятого этажа, человек разговорчивый и с памятью на всё, что было с 1974 года.</p>
+  <p>За это время Бугор узнал, как правильно солить огурцы, почему раньше трава была зеленее, где в городе самый честный сапожник и что сказал Семёнычу сосед в 1989-м. Про последнее была отдельная история на пятнадцать минут.</p>
+  <p>Когда двери открылись, Бугор вышел другим человеком. Он смотрел в одну точку и тихо говорил: «<span class="m">Бл*</span>, я теперь про огурцы знаю больше, чем про себя».</p>
+  <p>С тех пор он защищает лифт как святыню. Кто нажмёт все кнопки ради шутки, получает лекцию про уксус и укроп. Лифт не ломается уже полгода. Управляющая компания считает это чудом и хочет назначить Бугра старшим по дому.</p>
+</section>
+
+<!-- 10: Бугор, цитатник -->
+<section class="pg">
+  <p class="kick">Бугор говорил</p>
+  <h2>Цитатник</h2>
+  <ul class="quotes">
+    <li>«Сначала борщ, потом авторитет.»</li>
+    <li>«Я не злой. Я просто голодный.»</li>
+    <li>«Идёшь на дело — бери контейнер. Мало ли что останется.»</li>
+    <li>«Это не <span class="m">х*йня</span>, это стратегия. Ну ладно, <span class="m">х*йня</span>.»</li>
+    <li>«Уважение не купишь. Его можно только занять у Рашида.»</li>
+  </ul>
+  <p class="who">Записано со слов бабы Вали</p>
+</section>
+
+<!-- 11: Тихий, портрет -->
+<section class="pg pg-portrait" data-photo="p2" data-alt="Тихий">
+  <p class="kick">Досье № 2</p>
+  <div class="bust" tabindex="0" role="button" aria-label="Показать лицо: Тихий"></div>
+  <p class="tap">наведи или коснись</p>
+  <h2 class="name">Тихий</h2>
+  <p class="role">специалист по молчанию</p>
+  <ul class="stats">
+    <li><span>Должность</span><span>взгляд банды</span></li>
+    <li><span>Слов в сутки</span><span>четыре, из них два «ага»</span></li>
+    <li><span>Очки</span><span>на голове, как всегда</span></li>
+    <li><span>Девиз</span><span>ага</span></li>
+  </ul>
+</section>
+
+<!-- 12: Тихий, биография -->
+<section class="pg">
+  <p class="kick">Тихий · родился, помолчал</p>
+  <h2>Биография</h2>
+  <p>Родился тихо. Акушерка потом клялась, что младенец сначала огляделся, потом кивнул и только после этого заплакал, из вежливости.</p>
+  <p>Первое слово — «ага» — прозвучало в восемь месяцев. С тех пор словарь почти не расширялся: он считает, что слова надо беречь, как сухари.</p>
+  <p>В детстве его считали загадочным. На самом деле он искал очки, которые лежали у него на голове. Прозвище он получил после спора, кто дольше промолчит. Спор шёл сорок минут. Соперник сломался, ушёл и по дороге всем рассказал, какой Тихий страшный человек. Так родилась легенда, которую Тихий ни разу не опроверг. Ему лень.</p>
+  <p>Сегодня он известен тем, что на любой вопрос отвечает взглядом. Если взгляд не помогает, добавляет «ага». Если не помогает «ага», значит, вопрос был не к нему.</p>
+</section>
+
+<!-- 13: Тихий, байка 1 -->
+<section class="pg story">
+  <p class="kick">Байка первая</p>
+  <h2>Взгляд</h2>
+  <p>В магазине Тихий долго стоял у полки с сыром и вчитывался в этикетки. Охранник решил, что парень что-то задумал, и начал на него смотреть. Тихий посмотрел в ответ. Минуту они оба не моргали.</p>
+  <p>Первым сдался охранник. «Слушай, — сказал он, — бери что надо, только не смотри так». И сам вынес скидочную карточку.</p>
+  <p>Тихий кивнул. Он просто искал ценник, потому что очки остались дома.</p>
+  <p>Охранник потом рассказывал всем: «Ну и взгляд у него, <span class="m">бл*дь</span>, будто всю мою жизнь насквозь видит». Тихий об этом не знает. Он до сих пор считает, что в тот день ему просто повезло со скидкой.</p>
+</section>
+
+<!-- 14: Тихий, байка 2 -->
+<section class="pg story">
+  <p class="kick">Байка вторая</p>
+  <h2>Самокат</h2>
+  <p>Тихий нашёл у подъезда самокат. Без хозяина и без замка, с видом, будто он тут просто стоит и ждёт. «Ага», — сказал Тихий и поехал.</p>
+  <p>Через сорок минут батарея села. До дома было три километра. Тихий вздохнул, взвалил самокат на плечо и пошёл пешком. Самокат оказался тяжёлым, как совесть.</p>
+  <p>«<span class="m">С*ка</span>», — сказал Тихий. Это было второе слово за неделю, и оба раза он был прав.</p>
+  <p>Дойдя до подъезда, он поставил самокат на то же место, подключил к чьему-то удлинителю в тамбуре и ушёл. Утром хозяин увидел заряженный самокат и решил, что это такой сервис. Оставил на двери «спасибо» и пятьдесят рублей. Следствие считает дело ничьёй, потому что обвиняемый остался в плюсе.</p>
+</section>
+
+<!-- 15: Тихий, байка 3 -->
+<section class="pg story">
+  <p class="kick">Байка третья</p>
+  <h2>Молчаливая сделка</h2>
+  <p>Тихий решил продать старый телефон. Дал объявление, пришёл покупатель. Тихий достал телефон, положил на лавочку и посмотрел.</p>
+  <p>Покупатель говорил двадцать минут. Про свой район, про начальника, про цены и про тётку, которая вообще-то хотела этот телефон. Тихий кивал. Иногда говорил «ага».</p>
+  <p>К концу покупатель сам назвал цену, подумал и добавил тысячу сверху. «Чтоб без обид», — сказал он. Тихий кивнул так, что это можно было принять за благодарность.</p>
+  <p>Потом покупатель рассказывал друзьям: «Чел за двадцать минут ни слова не сказал, а я ему ещё и доплатил. Вот это <span class="m">п*здец</span>, а не человек». На самом деле Тихий просто ждал автобус, который опаздывал, а телефон ему был не очень нужен.</p>
+</section>
+
+<!-- 16: Тихий, цитатник -->
+<section class="pg">
+  <p class="kick">Тихий говорил</p>
+  <h2>Цитатник</h2>
+  <ul class="quotes">
+    <li>«Ага.»</li>
+    <li>«…»</li>
+    <li>«Лучше молчать и казаться крутым, чем заговорить и выяснить, что ты забыл очки.»</li>
+    <li>«<span class="m">Бл*</span>, где мои очки?» (очки были на голове)</li>
+    <li>«Тишина — это когда тебе нечего сказать, но ты уверен, что это круто.»</li>
+  </ul>
+  <p class="who">Записано с большим трудом</p>
+</section>
+
+<!-- 17: Малой, портрет -->
+<section class="pg pg-portrait" data-photo="p3" data-alt="Малой">
+  <p class="kick">Досье № 3</p>
+  <div class="bust" tabindex="0" role="button" aria-label="Показать лицо: Малой"></div>
+  <p class="tap">наведи или коснись</p>
+  <h2 class="name">Малой</h2>
+  <p class="role">самый опасный, по собственной версии</p>
+  <ul class="stats">
+    <li><span>Должность</span><span>боец, он же разведка</span></li>
+    <li><span>Боевая стойка</span><span>есть, пугает самого</span></li>
+    <li><span>Победы над гусем</span><span>0</span></li>
+    <li><span>Девиз</span><span>я не маленький, я самый молодой</span></li>
+  </ul>
+</section>
+
+<!-- 18: Малой, биография -->
+<section class="pg">
+  <p class="kick">Малой · родился, сразу встал в стойку</p>
+  <h2>Биография</h2>
+  <p>Самый младший в банде, о чём напоминает каждые пять минут. Родился сразу с кулаками, чтобы ничего не упустить, но к драке относится философски: лучше договориться, особенно если противник выше.</p>
+  <p>Первую боевую стойку освоил в три года перед зеркалом и с тех пор тренируется: левая вперёд, правая рядом, губы трубочкой для суровости. Получается так убедительно, что иногда пугается сам.</p>
+  <p>В детстве мечтал стать боксёром, потом экстрасенсом, потом шеф-поваром. Остановился на авторитете, потому что для него не нужно сдавать экзамены.</p>
+  <p>Малой уверен, что его боятся на районе. Один человек правда боится: почтальон, которому Малой однажды слишком серьёзно сказал «здрасьте». Остальные относятся к нему тепло и подкармливают. Малой считает это данью.</p>
+</section>
+
+<!-- 19: Малой, байка 1 -->
+<section class="pg story">
+  <p class="kick">Байка первая</p>
+  <h2>Гусь Фёдор</h2>
+  <p>На районе живёт гусь Фёдор. Он ходит по двору как хозяин, потому что он и есть хозяин. Малой решил это изменить.</p>
+  <p>Он встал напротив гуся, выставил левую руку вперёд, правую поставил у лица и выдал суровое: «Ну, давай». Именно так он выглядит на фото. Гусь посмотрел на него, раскрыл крылья и сделал шаг.</p>
+  <p>Через секунду Малой бежал по двору с воплем: «<span class="m">Бл*дь</span>, он настоящий!» Гусь шёл следом, не торопясь, как человек, который никуда не спешит и всё равно догонит.</p>
+  <p>Малой совершил тактическое отступление на три квартала. Потом объяснил, что это была разведка. С тех пор он обходит двор по параллельной улице и называет это дипломатией. Гусь по-прежнему держит территорию. Фёдор не обижается.</p>
+</section>
+
+<!-- 20: Малой, байка 2 -->
+<section class="pg story">
+  <p class="kick">Байка вторая</p>
+  <h2>Долг</h2>
+  <p>Один знакомый задолжал Малому пятьдесят рублей. Малой решил выбить долг достойно: пришёл, встал в дверях, сложил руки на груди и промолчал.</p>
+  <p>Знакомый долго смотрел на него, потом вздохнул, залез в кошелёк и протянул пятьсот. «Только отстань», — сказал он.</p>
+  <p>Малой растерялся. Пятьдесят он собирался получить, а пятьсот это уже другая статья. «Сдачи нет, — признался он. — Давай я схожу разменяю».</p>
+  <p>Он менял полчаса. Обошёл три магазина и ларёк, везде отказывали, потому что с утра никто не давал мелочь. В итоге вернулся и отдал четыреста пятьдесят из своих. «Да на <span class="m">х*й</span> мне такие деньги, я не вор», — сказал Малой. Знакомый после этого перестал с ним здороваться, из уважения.</p>
+</section>
+
+<!-- 21: Малой, байка 3 -->
+<section class="pg story">
+  <p class="kick">Байка третья</p>
+  <h2>Фото в стойке</h2>
+  <p>Малой захотел сфотографироваться в боевой стойке. Попросил друга снять его на фоне кустов, когда стемнеет, чтобы выглядело грозно.</p>
+  <p>С первой попытки в кадр попал фонарь. Со второй мимо проехал велосипедист и крикнул: «Малой, привет!» С третьей на дорожку вышла собака, села и стала смотреть на Малого с жалостью.</p>
+  <p>На сороковой попытке в кадр попал голубь. Он сел Малому на плечо и остался. Малой не шелохнулся. «Снимай быстро, — прошептал он. — Мне на <span class="m">х*й</span> этот голубь не нужен, но я в образе».</p>
+  <p>Получилось то самое фото: суровый взгляд, кулаки и лёгкий испуг в глазах. Голубя потом вырезали. Он до сих пор считает, что снимался в одной группе с Малым, и ждёт гонорар.</p>
+</section>
+
+<!-- 22: Малой, цитатник -->
+<section class="pg">
+  <p class="kick">Малой говорил</p>
+  <h2>Цитатник</h2>
+  <ul class="quotes">
+    <li>«Я не маленький. Я самый молодой, это разные вещи.»</li>
+    <li>«Драка — крайняя мера. Крайняя после гуся.»</li>
+    <li>«Это не отступление, это манёвр. Просто в обратную сторону.»</li>
+    <li>«Ну <span class="m">е*ать</span>, какой он большой, этот гусь.»</li>
+    <li>«Если боятся, значит, уважают. Если смеются, значит, боятся по-тихому.»</li>
+  </ul>
+  <p class="who">Записано, пока он не видел</p>
+</section>
+
+<!-- 23: Общее дело 1 -->
+<section class="pg story">
+  <p class="kick">Общее дело · глава первая</p>
+  <h2>Ночной хлеб</h2>
+  <p>В три часа ночи в банде случилось страшное: закончился хлеб. Бугор объявил сбор. Тихий пришёл, потому что не спал. Малой пришёл, потому что услышал слово «сбор».</p>
+  <p>Поход в круглосуточный занял полтора часа. По дороге Бугор зашёл к ларьку Рашида «просто поздороваться» и вышел с шаурмой. Тихий нашёл на лавочке чужой зонт и решил, что это знак. Малой подрался с тенью, проиграл и обиделся.</p>
+  <p>В магазине они взяли торт, три пачки чипсов, лимонад и батарейки неизвестно зачем. Кассирша пробила чек и спросила: «А хлеб?»</p>
+  <p>Бугор посмотрел на пакет. Тихий посмотрел на Бугра. Малой посмотрел на торт. «<span class="m">Бл*</span>, — сказал Бугор, — мы же за хлебом шли».</p>
+  <p>Домой вернулись с тортом. Хлеб купили утром. Он оказался вчерашним.</p>
+</section>
+
+<!-- 24: Общее дело 2 -->
+<section class="pg story">
+  <p class="kick">Общее дело · глава вторая</p>
+  <h2>Суд на лавочке</h2>
+  <p>Баба Валя узнала, что банда ночью шумела. Утром она собрала всех на лавочке и объявила суд. Обвинение вела она сама. Защиты не было: адвокатом должен был стать Тихий, а он промолчал.</p>
+  <p>Приговор: вымыть подъезд. Бугор взялся за швабру с видом человека, который всю жизнь об этом мечтал. Малой отвечал за перила и трижды поскользнулся на одной и той же ступеньке. Тихий молча протирал почтовые ящики и ни разу не ошибся.</p>
+  <p>К вечеру подъезд блестел так, что жильцы не узнали свой этаж. Дед Семёныч спустился с пятого, потрогал стену и сказал: «Как при царе».</p>
+  <p>«Это <span class="m">п*здец</span>, — тихо сказал Бугор, опираясь на швабру. — Мы реально поработали».</p>
+  <p>Баба Валя вынесла каждому по тарелке борща. Банда ела молча, даже Малой. Именно так выглядит мир в этом районе.</p>
+</section>
+
+<!-- 25: Эпилог -->
+<section class="pg">
+  <p class="kick">Эпилог</p>
+  <h2>Выводы комиссии</h2>
+  <p>Изучив жизнь трёх падонков, комиссия пришла к следующему.</p>
+  <p>Первое: громкость авторитета обратно пропорциональна расстоянию до бабы Вали.</p>
+  <p>Второе: гуси в этом районе устроены лучше людей.</p>
+  <p>Третье: любая банда держится на ларьке, где её накормят.</p>
+  <p>Четвёртое: «через пять минут» значит «через час», и никто не удивляется.</p>
+  <p>Последнее: никогда не поздно. Ни за хлебом, ни за прощением, ни за борщом, ни за тем, чтобы стать человеком. Главное успеть, пока тёплое.</p>
+</section>
+
+<!-- 26: финал -->
+<section class="pg pg-epi">
+  <p class="kick">Конец первого тома</p>
+  <img class="logo-end" src="img/logo.png" alt="Падонки">
+  <p class="who" style="text-align:center">Продолжение следует,<br>если баба Валя разрешит.</p>
+</section>
+
+<!-- 27: задняя обложка -->
+<section class="pg pg-back nonum">
+  <img class="lg" src="img/logo.png" alt="">
+  <p class="sub" style="font:400 .72em/1.6 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);margin:0">все герои выдуманы<br>совпадения случайны<br>18+</p>
+</section>
+
+</div>
+
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var maskSvg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 125' preserveAspectRatio='none'><ellipse cx='50' cy='45' rx='26' ry='36'/><rect x='40' y='74' width='20' height='20'/><path d='M0 125 L0 112 C0 100 14 94 32 89 L41 86 L59 86 L68 89 C86 94 100 100 100 112 L100 125 Z'/></svg>";
+  document.documentElement.style.setProperty("--bustmask", 'url("data:image/svg+xml,' + encodeURIComponent(maskSvg) + '")');
+
+  /* подготовка исходных страниц: цензура и силуэты */
+  var src = Array.prototype.slice.call(document.querySelectorAll("#src > .pg"));
+  var N = src.length;
+  document.querySelectorAll("#src .m").forEach(function (m) {
+    var t = m.textContent; m.innerHTML = '<i class="o" style="font-style:inherit">' + t + '</i><i class="c" style="font-style:inherit">[пик]</i>';
+  });
+  src.forEach(function (pg) {
+    var b = pg.querySelector(".bust");
+    if (b) b.innerHTML = '<div class="sil"></div><span class="qm">?</span><img class="photo" src="img/' + pg.getAttribute("data-photo") + '.jpg" alt="' + pg.getAttribute("data-alt") + '">';
+  });
+
+  /* книга */
+  var book = $("#book"), shift = $("#shift"), tableEl = $("#table"), countEl = $("#count");
+  var prevB = $("#prev"), nextB = $("#next"), hzl = $("#hzl"), hzr = $("#hzr");
+  var mode = "", L = 0, cur = 0, leaves = [], pw = 0, ph = 0, chain = 0;
+
+  function face(pg, cls, num) {
+    var f = document.createElement("div");
+    f.className = "face " + cls;
+    if (!pg) { f.classList.add("blank"); return f; }
+    var nonum = pg.classList.contains("nonum"), story = pg.classList.contains("story");
+    var extra = pg.className.split(/\s+/).filter(function (c) { return c && c !== "pg" && c !== "nonum"; });
+    f.innerHTML = '<div class="pin' + (story ? " story" : "") + '">' + pg.innerHTML + '</div>' + (nonum ? "" : '<div class="pnum">' + num + '</div>');
+    extra.forEach(function (c) { f.classList.add(c); });
+    return f;
+  }
+  function build(m) {
+    book.innerHTML = ""; leaves = []; mode = m;
+    book.classList.toggle("single", m === "single");
+    L = m === "spread" ? N / 2 : N;
+    for (var k = 0; k < L; k++) {
+      var el = document.createElement("div"); el.className = "leaf";
+      if (m === "spread") { el.appendChild(face(src[2 * k], "front", 2 * k)); el.appendChild(face(src[2 * k + 1], "back", 2 * k + 1)); }
+      else { el.appendChild(face(src[k], "front", k)); el.appendChild(face(null, "back", 0)); }
+      book.appendChild(el); leaves.push({ el: el, flipped: false });
+    }
+  }
+  function maxCur() { return mode === "spread" ? L : N - 1; }
+  function zFor(i, flipped) { return flipped ? i + 1 : L - i + 1; }
+  function paint(animate) {
+    leaves.forEach(function (lf, i) {
+      var f = i < cur;
+      if (lf.flipped !== f) {
+        lf.flipped = f; lf.el.classList.toggle("flipped", f);
+        if (animate) { lf.el.style.zIndex = 500; (function (l, ix, fl) { setTimeout(function () { l.el.style.zIndex = zFor(ix, fl); }, 1050); })(lf, i, f); }
+        else lf.el.style.zIndex = zFor(i, f);
+      } else if (!animate) lf.el.style.zIndex = zFor(i, f);
+    });
+    var tx = "0";
+    if (mode === "spread") tx = cur === 0 ? "-25%" : (cur === L ? "25%" : "0");
+    shift.style.transform = "translateX(" + tx + ")";
+    var txt;
+    if (cur === 0) txt = "обложка";
+    else if (mode === "spread") txt = cur === L ? "конец" : "стр. " + (2 * cur - 1) + "–" + (2 * cur);
+    else txt = cur === N - 1 ? "конец" : "стр. " + cur + " из " + (N - 2);
+    countEl.textContent = txt;
+    prevB.disabled = cur <= 0; nextB.disabled = cur >= maxCur();
+    hzl.disabled = cur <= 0; hzr.disabled = cur >= maxCur();
+    hzl.style.width = hzr.style.width = Math.round(pw * 0.11) + "px";
+  }
+  function curForPage(p) {
+    if (mode === "spread") return p === 0 ? 0 : (p % 2 ? (p + 1) / 2 : p / 2);
+    return Math.min(p, N - 1);
+  }
+  function pageOf(c) { return mode === "spread" ? (c === 0 ? 0 : 2 * c - 1) : c; }
+  function goTo(target) {
+    target = Math.max(0, Math.min(maxCur(), target));
+    clearTimeout(chain);
+    (function step() {
+      if (cur === target) return;
+      cur += cur < target ? 1 : -1;
+      paint(true);
+      if (cur !== target) chain = setTimeout(step, 170);
+    })();
+  }
+  function go(d) { goTo(cur + d); }
+  function goPage(p) { goTo(curForPage(p)); }
+
+  function layout() {
+    var W = tableEl.clientWidth, H = tableEl.clientHeight - 6;
+    var m = (W >= 880 && W > H * 1.05) ? "spread" : "single";
+    if (m === "spread") { pw = Math.min(W / 2 - 8, H * 0.76, 600); ph = pw / 0.76; if (ph > H) { ph = H; pw = ph * 0.76; } }
+    else { pw = Math.min(W, 560); ph = Math.min(H, pw / 0.6); if (pw / ph > 0.78) pw = ph * 0.78; }
+    pw = Math.floor(pw); ph = Math.floor(ph);
+    var page = pageOf(cur);
+    if (m !== mode) { build(m); cur = curForPage(page); }
+    book.style.width = (m === "spread" ? pw * 2 : pw) + "px"; book.style.height = ph + "px";
+    shift.style.width = book.style.width; shift.style.height = ph + "px";
+    book.style.setProperty("--pw", pw + "px"); book.style.setProperty("--ph", ph + "px");
+    document.documentElement.style.setProperty("--fs", Math.max(13.5, Math.min(17.5, pw / 31)) + "px");
+    leaves.forEach(function (lf) { lf.flipped = null; });
+    paint(false);
+  }
+  var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(layout, 120); });
+
+  prevB.addEventListener("click", function () { go(-1); });
+  nextB.addEventListener("click", function () { go(1); });
+  hzl.addEventListener("click", function () { go(-1); });
+  hzr.addEventListener("click", function () { go(1); });
+  document.addEventListener("keydown", function (e) {
+    if (intro && !intro.hidden) return;
+    if (e.key === "ArrowRight" || e.key === "PageDown") go(1);
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") go(-1);
+    else if (e.key === "Home") goTo(0);
+    else if (e.key === "End") goTo(maxCur());
+  });
+  document.addEventListener("click", function (e) {
+    var g = e.target.closest("[data-go]"); if (g) { goPage(parseInt(g.getAttribute("data-go"), 10)); return; }
+    var b = e.target.closest(".bust"); if (b) b.classList.toggle("on");
+  });
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("bust")) { e.preventDefault(); e.target.classList.toggle("on"); }
+  });
+  var tx0 = 0, ty0 = 0;
+  book.addEventListener("touchstart", function (e) { tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY; }, { passive: true });
+  book.addEventListener("touchend", function (e) {
+    var dx = e.changedTouches[0].clientX - tx0, dy = e.changedTouches[0].clientY - ty0;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) go(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  var cb = $("#censor");
+  cb.addEventListener("click", function () {
+    var on = document.body.classList.toggle("clean");
+    cb.setAttribute("aria-pressed", on); cb.textContent = "цензура: " + (on ? "вкл" : "выкл");
+  });
+
+  /* заставка */
+  var intro = $("#intro"), stage = $("#stage"), cv = $("#cv"), ctx = cv.getContext("2d"), skipBtn = $("#skip"), replayBtn = $("#replay");
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var raf = 0, timers = [], running = false, logo = null;
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); }
+  function finish() {
+    if (!running) return;
+    running = false; clearTimers();
+    intro.classList.add("out"); document.body.classList.remove("lock");
+    timers.push(setTimeout(function () { intro.hidden = true; }, 950));
+  }
+  skipBtn.addEventListener("click", finish); intro.addEventListener("click", finish);
+  function ease(t) { return 1 - Math.pow(1 - t, 3); }
+  function play() {
+    clearTimers(); running = true; intro.hidden = false; intro.classList.remove("out"); document.body.classList.add("lock");
+    stage.classList.remove("solid", "shining");
+    var S = Math.floor(Math.min(window.innerWidth * 0.88, window.innerHeight * 0.74, 640));
+    stage.style.setProperty("--S", S + "px");
+    if (reduce) { stage.classList.add("solid"); timers.push(setTimeout(finish, 1400)); return; }
+    var dpr = Math.min(window.devicePixelRatio || 1, 2), W = Math.round(S * dpr);
+    cv.width = W; cv.height = W; ctx.clearRect(0, 0, W, W);
+    var off = document.createElement("canvas"); off.width = W; off.height = W;
+    var octx = off.getContext("2d"); octx.drawImage(logo, 0, 0, W, W);
+    var data = octx.getImageData(0, 0, W, W).data, step = Math.max(2, Math.round(2 * dpr)), pts = [];
+    for (var at = 0; at < 4; at++) {
+      pts = [];
+      for (var y = 0; y < W; y += step) for (var x = 0; x < W; x += step) {
+        var i = (y * W + x) * 4;
+        if (data[i + 3] > 90) pts.push({ tx: x, ty: y, c: "rgb(" + data[i] + "," + data[i + 1] + "," + data[i + 2] + ")" });
+      }
+      if (pts.length <= 15000) break; step += 1;
+    }
+    var cx = W / 2, cy = W / 2;
+    pts.forEach(function (p) {
+      var a = Math.random() * Math.PI * 2, r = W * (0.55 + Math.random() * 0.7);
+      p.sx = cx + Math.cos(a) * r; p.sy = cy + Math.sin(a) * r * 0.9;
+      p.d = (p.ty / W) * 900 + Math.random() * 600; p.dur = 1300 + Math.random() * 900; p.sw = (Math.random() - 0.5) * W * 0.18;
+    });
+    var size = Math.max(1.5, step * 0.95), t0 = performance.now(), solidAt = 3000, shone = false;
+    function frame(now) {
+      if (!running) return;
+      var el = now - t0; ctx.clearRect(0, 0, W, W);
+      var fade = el > solidAt ? Math.max(0, 1 - (el - solidAt) / 700) : 1;
+      if (fade > 0) {
+        for (var k = 0; k < pts.length; k++) {
+          var p = pts[k], t = (el - p.d) / p.dur;
+          if (t <= 0) continue; if (t > 1) t = 1;
+          var e = ease(t), inv = 1 - e, bend = Math.sin(Math.PI * e) * p.sw;
+          ctx.globalAlpha = (0.2 + 0.8 * e) * fade; ctx.fillStyle = p.c;
+          ctx.fillRect(p.tx + (p.sx - p.tx) * inv + bend, p.ty + (p.sy - p.ty) * inv - bend * 0.4, size, size);
+        }
+        ctx.globalAlpha = 1;
+      }
+      if (el > solidAt && !stage.classList.contains("solid")) stage.classList.add("solid");
+      if (el > solidAt + 500 && !shone) { shone = true; stage.classList.add("shining"); timers.push(setTimeout(finish, 2100)); }
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  replayBtn.addEventListener("click", function () { if (logo) play(); });
+
+  layout();
+  logo = new Image(); logo.onload = play;
+  logo.onerror = function () { stage.classList.add("solid"); running = true; setTimeout(finish, 1200); };
+  logo.src = "img/logo.png";
+})();
+</script>
+</body>
+</html>
